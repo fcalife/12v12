@@ -3,7 +3,6 @@ if not _G.AutoTeam then
 	_G.AutoTeam.cache = {}
 	_G.AutoTeam.testing = true
 end
-
 _G.AutoTeam.steamIDsToDebugg = {
     [104356809] = 1, -- Sheodar
     [93913347] = 1, -- Darklord
@@ -160,7 +159,12 @@ function AutoTeam:Index()
 	end
 	for __,pID in pairs(table.concat(highPatreons,lowPatreons)) do
 		if not playersIsParty[pID] then 
-			local team = getTeamMinLevelAllTeam() 
+			local team = getTeamMinLevelAllTeam()
+			local maxPlayers = GameRules:GetCustomGameTeamMaxPlayers(team) 
+			while (#teams[team] >= maxPlayers or #teams[team] >= #allPlayers/#validTeams) do
+				team = AutoTeam:PickRandomShuffle( validTeams )
+				maxPlayers = GameRules:GetCustomGameTeamMaxPlayers(team)
+			end
 			table.insert(teams[team],pID)
 		end
 	end
@@ -212,17 +216,20 @@ function AutoTeam:Index()
 			end
 		end
 	end
-	for teamID,players in pairs(teams) do
-		AutoTeam:Debug('Team id: ' .. teamID .. ' sum lvl: ' .. getLevelByTeam(teamID))
-	end
-
 	for _,pID in pairs(allPlayers) do
 		AutoTeam:Debug('Player: '.. pID .. ' Patreon Level: ' .. AutoTeam:GetPatreonLevel(pID))
+	end
+
+	for teamID,players in pairs(teams) do
+		AutoTeam:Debug('Team id: ' .. teamID .. ' sum lvl: ' .. getLevelByTeam(teamID))
+		AutoTeam:Debug('Team id: ' .. teamID .. ' Amount Hero: ' .. #players)
 	end
 	for teamID,players in pairs(teams) do
 		for __,pID in pairs(players) do
 			local playersMax = GameRules:GetCustomGameTeamMaxPlayers(teamID)
-			GameRules:SetCustomGameTeamMaxPlayers(teamID, playersMax + 1)
+			if _G.AutoTeam.testing and isTestState then
+				GameRules:SetCustomGameTeamMaxPlayers(teamID, playersMax + 1)
+			end
 			local player = PlayerResource:GetPlayer(pID)
 			if player then 
 				player:SetTeam(teamID)
@@ -231,7 +238,9 @@ function AutoTeam:Index()
 				PlayerResource:GetSelectedHeroEntity(pID):SetTeam(teamID)
 			end
 			PlayerResource:SetCustomTeamAssignment(pID,teamID)
-			GameRules:SetCustomGameTeamMaxPlayers(teamID, playersMax)
+			if _G.AutoTeam.testing and isTestState then
+				GameRules:SetCustomGameTeamMaxPlayers(teamID, playersMax)
+			end
 		end
 	end
 end
@@ -269,3 +278,4 @@ function AutoTeam:Init()
 	end
 	AutoTeam:Index()
 end
+
