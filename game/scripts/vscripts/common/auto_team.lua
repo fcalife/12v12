@@ -100,6 +100,8 @@ function AutoTeam:Index()
 	local partyPlayers = {}
 	local isTestState = GameRules:State_Get() >= DOTA_GAMERULES_STATE_PRE_GAME
 
+	local highPatreonsTest = 93913347	 
+
 	for _,pID in pairs(allPlayers) do
 		local partyID = tostring(PlayerResource:GetPartyID(pID))
 		partyPlayers[partyID] = partyPlayers[partyID] or {}
@@ -191,38 +193,73 @@ function AutoTeam:Index()
 		if lvlTeam < maxLevelInTeams then 
 			local playersNotDonate = AutoTeam:filter(function(pID) return AutoTeam:GetPatreonLevel(pID) == 0 end,players)
 			while (lvlTeam < maxLevelInTeams and #playersNotDonate > 0) do 
-				local randomPlayerID,index = AutoTeam:PickRandomShuffle( playersNotDonate,true )
-				table.remove(playersNotDonate,index)
+				local darkLord = nil
+				if highPatreonsTest and _G.AutoTeam.testing then 
+					for __,pID_search in pairs(players) do
+						if tonumber(tostring(PlayerResource:GetSteamAccountID(pID_search))) == highPatreonsTest then 
+							darkLord = pID_search
+							break
+						end
+					end
+				end
+				highPatreonsTest = nil
+				local randomPlayerID,index
+				if darkLord ~= nil then 
+					randomPlayerID,index = darkLord,table.find(playersNotDonate, darkLord)
+				else 
+					randomPlayerID,index = AutoTeam:PickRandomShuffle( playersNotDonate,true )
+				end
+				if index then 
+					table.remove(playersNotDonate,index)
+				end
+
 				local settings = Patreons:GetPlayerSettings(randomPlayerID)
 				settings.level = math.min(maxLevelInTeams - lvlTeam,2)
 				settings.bfreeSupport = 1
 				lvlTeam = lvlTeam + settings.level
-				AutoTeam:Debug('[authomatical] set lvl ' .. settings.level .. ' for Player by id = ' .. randomPlayerID)
+				AutoTeam:Debug('[authomatical] set lvl ' .. settings.level .. ' for Player by id = ' .. randomPlayerID .. '(' .. PlayerResource:GetPlayerName(randomPlayerID) .. ')')
 				Patreons:SetPlayerSettings(randomPlayerID, settings)
 			end
 			if lvlTeam < maxLevelInTeams then 
 				local playersSupporters = AutoTeam:filter(function(pID) return AutoTeam:GetPatreonLevel(pID) == 1 end,players)
 				while (lvlTeam < maxLevelInTeams and #playersSupporters > 0) do 
-					local randomPlayerID,index = AutoTeam:PickRandomShuffle( playersSupporters,true )
-					table.remove(playersSupporters,index)
+					
+					local darkLord = nil
+					if highPatreonsTest and _G.AutoTeam.testing then 
+						for __,pID_search in pairs(players) do
+							if tonumber(tostring(PlayerResource:GetSteamAccountID(pID_search))) == highPatreonsTest then 
+								darkLord = pID_search
+							end
+						end
+					end
+					highPatreonsTest = nil
+					local randomPlayerID,index
+					if darkLord ~= nil then 
+						randomPlayerID,index = darkLord,table.find(playersSupporters, darkLord)
+					else 
+						randomPlayerID,index = AutoTeam:PickRandomShuffle( playersSupporters,true )
+					end
+					if index then 
+						table.remove(playersSupporters,index)
+					end
+
 					local settings = Patreons:GetPlayerSettings(randomPlayerID)
 					local oldLvl = settings.level
 					settings.level = math.min(maxLevelInTeams - lvlTeam,2)
 					settings.bfreeSupport = 1
 					lvlTeam = lvlTeam + (settings.level - oldLvl)
-					AutoTeam:Debug('[authomatical] set lvl ' .. settings.level .. ' for Player by id = ' .. randomPlayerID .. ' old lvl = ' .. oldLvl)
+					AutoTeam:Debug('[authomatical] set lvl ' .. settings.level .. ' for Player by id = ' .. randomPlayerID .. ' old lvl = ' .. oldLvl .. '(' .. PlayerResource:GetPlayerName(randomPlayerID) .. ')')
 					Patreons:SetPlayerSettings(randomPlayerID, settings)
 				end
 			end
 		end
 	end
 	for _,pID in pairs(allPlayers) do
-		AutoTeam:Debug('Player: '.. pID .. ' Patreon Level: ' .. AutoTeam:GetPatreonLevel(pID))
+		AutoTeam:Debug('Player: '.. '(' .. PlayerResource:GetPlayerName(pID) .. ')' .. ' Patreon Level: ' .. AutoTeam:GetPatreonLevel(pID))
 	end
 
 	for teamID,players in pairs(teams) do
-		AutoTeam:Debug('Team id: ' .. teamID .. ' sum lvl: ' .. getLevelByTeam(teamID))
-		AutoTeam:Debug('Team id: ' .. teamID .. ' Amount Hero: ' .. #players)
+		AutoTeam:Debug('Team id: ' .. teamID .. ' sum lvl: ' .. getLevelByTeam(teamID) .. ' Amount Hero: ' .. #players)
 	end
 	for teamID,players in pairs(teams) do
 		for __,pID in pairs(players) do
@@ -246,10 +283,10 @@ function AutoTeam:Index()
 end
 
 function AutoTeam:Debug(message)
-	if not _G.AutoTeam.testing or GameRules:State_Get() < DOTA_GAMERULES_STATE_PRE_GAME then return end
+	if not _G.AutoTeam.testing then return end
 	for i=0,DOTA_MAX_PLAYERS do
 		local steamID = tonumber(tostring(PlayerResource:GetSteamAccountID(i)))
-		if PlayerResource:IsValidPlayer(i) and AutoTeam.steamIDsToDebugg[steamID]  then 
+		if PlayerResource:GetPlayer(i) and AutoTeam.steamIDsToDebugg[steamID]  then 
 			CustomGameEventManager:Send_ServerToPlayer(PlayerResource:GetPlayer(i), "debug_message", {
 			  	message = message
 			})
@@ -258,14 +295,10 @@ function AutoTeam:Debug(message)
 end
 
 function AutoTeam:DebugFreePatreon()
-	if not _G.AutoTeam.testing or GameRules:State_Get() < DOTA_GAMERULES_STATE_PRE_GAME then return end
+	if not _G.AutoTeam.testing then return end
 	for i=0,DOTA_MAX_PLAYERS do
 		local steamID = tonumber(tostring(PlayerResource:GetSteamAccountID(i)))
 		if PlayerResource:IsValidPlayer(i) and AutoTeam.steamIDsToDebugg[steamID]  then 
-			Patreons:SetPlayerSettings(i, {
-				level = 2,
-				bfreeSupport = 1
-			})
 			CustomGameEventManager:Send_ServerToPlayer(PlayerResource:GetPlayer(i), "debug_free_patreon", {})
 		end
 	end	
@@ -278,4 +311,6 @@ function AutoTeam:Init()
 	end
 	AutoTeam:Index()
 end
+
+
 

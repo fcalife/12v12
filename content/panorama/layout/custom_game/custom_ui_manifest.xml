@@ -30,6 +30,16 @@
 			}
 		}
 
+		GameEvents.Subscribe('debug_message', (data) => {
+		    let arr = data.message
+		    if (typeof data.message == 'object')
+		        for (k in arr){
+		            $.Msg(arr[k])
+		        }
+		    else
+		        $.Msg(arr)
+		});
+
 		FindDotaHudElement( "PreGame" ).FindChild( "Header" ).style.visibility = "collapse"
 	</script>
 

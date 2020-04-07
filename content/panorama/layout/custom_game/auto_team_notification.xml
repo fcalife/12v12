@@ -1,30 +1,20 @@
 <root>
 	<script>
-		GameEvents.Subscribe('debug_message', (data) => {
-		    let arr = data.message
-		    if (typeof data.message == 'object')
-		        for (k in arr){
-		            $.Msg(arr[k])
-		        }
-		    else
-		        $.Msg(arr)
-		});
-
 		function NotificationAddPatreon(){
 			let pID = Game.GetLocalPlayerID()
 			let patreonBonuses = CustomNetTables.GetTableValue("game_state", "patreon_bonuses");
 			let bfreeSupport = patreonBonuses && patreonBonuses[pID]
 			if (bfreeSupport){
 				bfreeSupport = bfreeSupport['bfreeSupport']
-			}  
-			bfreeSupport = bfreeSupport &&  Game.GetState() == DOTA_GameState.DOTA_GAMERULES_STATE_PRE_GAME
+			}   
+			bfreeSupport = !!bfreeSupport &&  Game.GetState() == DOTA_GameState.DOTA_GAMERULES_STATE_PRE_GAME
 			$('#notification').SetHasClass('Visible', !!bfreeSupport)
 			if (!!bfreeSupport){
 				Game.EmitSound( "DOTA_Item.IronTalon.Activate" )
 				$.Schedule(5,() => {
 					$('#notification').RemoveClass('Visible')
 				})
-			}
+			} 
 		}
 
 
