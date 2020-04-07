@@ -245,7 +245,7 @@ function AutoTeam:Index()
 
 					local settings = Patreons:GetPlayerSettings(randomPlayerID)
 					local oldLvl = settings.level
-					settings.level = math.min(maxLevelInTeams - lvlTeam,2)
+					settings.level =  math.min(settings.level + (maxLevelInTeams - lvlTeam),2)
 					settings.bfreeSupport = 1
 					lvlTeam = lvlTeam + (settings.level - oldLvl)
 					AutoTeam:Debug('[authomatical] set lvl ' .. settings.level .. ' for Player by id = ' .. randomPlayerID .. ' old lvl = ' .. oldLvl .. '(' .. PlayerResource:GetPlayerName(randomPlayerID) .. ')')
