@@ -112,7 +112,7 @@ function AutoTeam:Index()
 	for __,v in ipairs(validTeams) do teams[v] = {} end
 	if table.length(partyPlayers) > 1 then 
 		for partyID,players in pairs(partyPlayers) do
-			if #players > 1 then 
+			if #players > 1 and partyID ~= '0' then 
 				AutoTeam:Debug('Party ID: '.. partyID)
 				local team = AutoTeam:getTeamMinPlayers(teams)
 				local maxPlayers = GameRules:GetCustomGameTeamMaxPlayers(team)
