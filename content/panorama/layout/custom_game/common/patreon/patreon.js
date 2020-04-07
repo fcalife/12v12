@@ -245,6 +245,8 @@ new PatreonPerk( "supporter_perks_high", 2 )
 SetPatreonLevel( 0 )
 
 SubscribeToNetTableKey('game_state', 'patreon_bonuses', function (data) {
+	UpdatePaymentTargetList(data);
+
 	var status = data[Game.GetLocalPlayerID()];
 	if (!status) return;
 
